@@ -1,0 +1,28 @@
+{
+    "name": "node-red-contrib-jetson-gpio",
+  "author": {
+    "name": "Richard Shaw",
+    "email": "hobbes1069@fedoraproject.org",
+  },
+  "dependencies": {},
+  "description": "A basic Node-RED node for the Jetson Nano GPIO",
+  "keywords": [
+    "node-red",
+    "Jetson",
+    "GPIO",
+  ],
+  "license": "Apache-2.0",
+  "node-red": {
+    "nodes": {
+      "jetson-gpio": "36-jetson-gpio.js"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hobbes1069/node-red-contrib-jetson-gpio"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "version": "0.0.1"
+}
