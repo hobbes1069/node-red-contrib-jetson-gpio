@@ -4,10 +4,14 @@ module.exports = function(RED) {
     var execSync = require('child_process').execSync;
     var exec = require('child_process').exec;
     var spawn = require('child_process').spawn;
-    var fs = require('fs');
 
-    var testCommand = __dirname+'/testgpio.py'
-    var gpioCommand = __dirname+'/nrgpio';
+    var testCommand = 'gpiodetect'
+    var gpioGetCmd  = 'gpioget';
+    var gpioSetCmd  = 'gpioset';
+    var gpioMonCmd  = 'gpiomon';
+    var gpioInfoCmd = 'gpioinfo';
+    var gpiochip    = 'tegra-gpio';
+    var gpiomode    = '--mode=exit';
     var allOK = true;
 
     try {
@@ -17,16 +21,19 @@ module.exports = function(RED) {
         RED.log.warn("jetson-gpio : "+RED._("jetson-gpio.errors.ignorenode"));
     }
 
-    // the magic to make python print stuff immediately
-    process.env.PYTHONUNBUFFERED = 1;
-
     var pinsInUse = {};
     var pinTypes = {"out":RED._("jetson-gpio.types.digout"), "tri":RED._("jetson-gpio.types.input"), "up":RED._("jetson-gpio.types.pullup"), "down":RED._("jetson-gpio.types.pulldown"), "pwm":RED._("jetson-gpio.types.pwmout")};
+
+    const pin2bcm = {"3":2, "5":3, "7":4, "8":14, "10":15, "11":17, "12":18, "13":27,
+	"15":22, "16":23, "18":24, "19":10, "21":9, "22":25, "23":11, "24":8, "26":7,
+        "29":5, "31":6, "32":12, "33":13, "35":19, "36":16, "37":26, "38":20, "40":21
+    }
 
     function GPIOInNode(n) {
         RED.nodes.createNode(this,n);
         this.buttonState = -1;
         this.pin = n.pin;
+        this.bcm = pin2bcm[n.pin];
         this.intype = n.intype;
         this.read = n.read || false;
         this.debounce = Number(n.debounce || 25);
@@ -42,8 +49,9 @@ module.exports = function(RED) {
         }
 
         if (allOK === true) {
-            if (node.pin !== undefined) {
-                node.child = spawn(gpioCommand, ["in",node.pin,node.intype,node.debounce]);
+            if (node.bcm !== undefined) {
+                //node.child = spawn(gpioGetCmd, ["in",node.pin,node.intype,node.debounce]);
+                node.child = spawn(gpioMonCmd, [gpiochip, node.bcm]);
                 node.running = true;
                 node.status({fill:"yellow",shape:"dot",text:"jetson-gpio.status.ok"});
 
@@ -52,7 +60,7 @@ module.exports = function(RED) {
                     for (var i = 0; i < d.length; i++) {
                         if (d[i] === '') { return; }
                         if (node.running && node.buttonState !== -1 && !isNaN(Number(d[i])) && node.buttonState !== d[i]) {
-                            node.send({ topic:"pi/"+node.pin, payload:Number(d[i]) });
+                            node.send({ topic:"jetson/"+node.pin, payload:Number(d[i]) });
                         }
                         node.buttonState = d[i];
                         node.status({fill:"green",shape:"dot",text:d[i]});
@@ -93,7 +101,7 @@ module.exports = function(RED) {
                 if (node.intype == "up") { val = 1; }
                 if (node.intype == "down") { val = 0; }
                 setTimeout(function() {
-                    node.send({ topic:"pi/"+node.pin, payload:val });
+                    node.send({ topic:"jetson/"+node.pin, payload:val });
                     node.status({fill:"grey",shape:"dot",text:RED._("jetson-gpio.status.na",{value:val})});
                 },250);
             }
@@ -115,6 +123,7 @@ module.exports = function(RED) {
     function GPIOOutNode(n) {
         RED.nodes.createNode(this,n);
         this.pin = n.pin;
+        this.bcm = pin2bcm[n.pin];
         this.set = n.set || false;
         this.level = n.level || 0;
         this.freq = n.freq || 100;
@@ -129,6 +138,21 @@ module.exports = function(RED) {
             }
         }
 
+	function gpioset(level) {
+	    if (node.child) { node.child.kill('SIGTERM') }
+            if (node.out === "out") {
+                node.child = spawn(gpioSetCmd, ["--mode=signal", gpiochip, node.bcm+"="+level]);
+                node.status({fill:"green",shape:"dot",text:level});
+            } else {
+                node.status({fill:"yellow",shape:"dot",text:"jetson-gpio.status.ok"});
+		node.time = (1 / node.freq) / 2;
+		while (true) {
+		    node.child = spawn(gpioSetCmd, ["--mode=time", "--sec="+node.time, gpiochip, node.bcm+"=1"]);
+		    node.child = spawn(gpioSetCmd, ["--mode=time", "--sec="+node.time, gpiochip, node.bcm+"=0"]);
+                }
+            }
+	}
+	    
         function inputlistener(msg, send, done) {
             if (msg.payload === "true") { msg.payload = true; }
             if (msg.payload === "false") { msg.payload = false; }
@@ -137,50 +161,35 @@ module.exports = function(RED) {
             if (node.out === "pwm") { limit = 100; }
             if ((out >= 0) && (out <= limit)) {
                 if (RED.settings.verbose) { node.log("out: "+out); }
-                if (node.child !== null) {
-                    node.child.stdin.write(out+"\n", () => {
-                        if (done) { done(); }
-                    });
-                    node.status({fill:"green",shape:"dot",text:msg.payload.toString()});
+                gpioset(out);
+                node.status({fill:"green",shape:"dot",text:msg.payload.toString()});
                 }
-                else {
-                    node.error(RED._("jetson-gpio.errors.pythoncommandnotfound"),msg);
-                    node.status({fill:"red",shape:"ring",text:"jetson-gpio.status.not-running"});
-                }
-            }
             else { node.warn(RED._("jetson-gpio.errors.invalidinput")+": "+out); }
         }
 
         if (allOK === true) {
             if (node.pin !== undefined) {
-                if (node.set && (node.out === "out")) {
-                    node.child = spawn(gpioCommand, [node.out,node.pin,node.level]);
-                    node.status({fill:"green",shape:"dot",text:node.level});
-                } else {
-                    node.child = spawn(gpioCommand, [node.out,node.pin,node.freq]);
-                    node.status({fill:"yellow",shape:"dot",text:"jetson-gpio.status.ok"});
-                }
-                node.running = true;
+		gpioset(node.level);
 
-                node.on("input", inputlistener);
+		node.on("input", inputlistener);
 
                 node.child.stdout.on('data', function (data) {
-                    if (RED.settings.verbose) { node.log("out: "+data+" :"); }
+                    if (RED.settings.verbose) { node.log("out: "+data); }
                 });
 
                 node.child.stderr.on('data', function (data) {
-                    if (RED.settings.verbose) { node.log("err: "+data+" :"); }
+                    if (RED.settings.verbose) { node.log("err: "+data); }
                 });
 
                 node.child.on('close', function (code) {
-                    node.child = null;
-                    node.running = false;
                     if (RED.settings.verbose) { node.log(RED._("jetson-gpio.status.closed")); }
                     if (node.finished) {
                         node.status({fill:"grey",shape:"ring",text:"jetson-gpio.status.closed"});
                         node.finished();
                     }
-                    else { node.status({fill:"red",shape:"ring",text:"jetson-gpio.status.stopped"}); }
+                    else if (code == 0) { 
+			node.status({fill:"green",shape:"dot",text:"jetson-gpio.status.running"}); }
+		    else { node.status({fill:"red",shape:"ring",text:"jetson-gpio.status.stopped"}); }
                 });
 
                 node.child.on('error', function (err) {
@@ -195,7 +204,7 @@ module.exports = function(RED) {
             }
         }
         else {
-            node.status({fill:"grey",shape:"dot",text:"jetson-gpio.status.not-available"});
+            node.status({fill:"grey",shape:"dot",text:"jetson-gpio.status.not.available"});
             node.on("input", function(msg) {
                 node.status({fill:"grey",shape:"dot",text:RED._("jetson-gpio.status.na",{value:msg.payload.toString()})});
             });
@@ -206,7 +215,6 @@ module.exports = function(RED) {
             delete pinsInUse[node.pin];
             if (node.child != null) {
                 node.finished = done;
-                node.child.stdin.write("close "+node.pin);
                 node.child.kill('SIGKILL');
             }
             else { done(); }
@@ -226,8 +234,8 @@ module.exports = function(RED) {
 
             node.child.stdout.on('data', function (data) {
                 data = Number(data);
-                if (data !== 0) { node.send({ topic:"pi/mouse", button:data, payload:1 }); }
-                else { node.send({ topic:"pi/mouse", button:data, payload:0 }); }
+                if (data !== 0) { node.send({ topic:"jetson/mouse", button:data, payload:1 }); }
+                else { node.send({ topic:"jetson/mouse", button:data, payload:0 }); }
             });
 
             node.child.stderr.on('data', function (data) {
@@ -283,7 +291,7 @@ module.exports = function(RED) {
                         var act = "up";
                         if (b[1] === "1") { act = "down"; }
                         if (b[1] === "2") { act = "repeat"; }
-                        node.send({ topic:"pi/key", payload:Number(b[0]), action:act });
+                        node.send({ topic:"jetson/key", payload:Number(b[0]), action:act });
                     }
                 }
             });
@@ -334,7 +342,7 @@ module.exports = function(RED) {
 
     var pitype = { type:"" };
     if (allOK === true) {
-        exec(gpioCommand+" info", function(err,stdout,stderr) {
+        exec(gpioInfoCmd+" info", function(err,stdout,stderr) {
             if (err) {
                 RED.log.info(RED._("jetson-gpio.errors.version"));
             }

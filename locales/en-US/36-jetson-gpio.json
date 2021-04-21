@@ -17,7 +17,8 @@
             "middle": "Middle"
         },
         "resistor": {
-            "none": "none",
+            "as-is": "as-is",
+            "disable": "disable",
             "pullup": "pullup",
             "pulldown": "pulldown"
         },

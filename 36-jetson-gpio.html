@@ -67,10 +67,10 @@
         background-color:#FFFDD0;
     }
 </style>
-<script type="text/html" data-template-name="jetson-gpio in">
 
+<script type="text/html" data-template-name="jetson-gpio in">
     <div class="form-row" style="min-width: 540px">
-		<label><i class="fa fa-circle"></i> <span data-i18n="jetson-gpio.pinname"></span></label>
+	<label><i class="fa fa-circle"></i> <span data-i18n="jetson-gpio.pinname"></span></label>
         <div class="jetson-gpio-pinTable">
             <div class="pinTableBody" id="pinform">
                 <div class="pinTableRow">
@@ -163,7 +163,8 @@
     <div class="form-row">
         <label for="node-input-intype"><i class="fa fa-level-up"></i> <span data-i18n="jetson-gpio.label.resistor"></span></label>
         <select type="text" id="node-input-intype" style="width:100px;">
-        <option value="tri" data-i18n="jetson-gpio.resistor.none"></option>
+        <option value="tri" data-i18n="jetson-gpio.resistor.as-is"></option>
+        <option value="tri" data-i18n="jetson-gpio.resistor.disable"></option>
         <option value="up" data-i18n="jetson-gpio.resistor.pullup"></option>
         <option value="down" data-i18n="jetson-gpio.resistor.pulldown"></option>
         </select>
@@ -219,7 +220,7 @@
         },
         inputs:0,
         outputs:1,
-        icon: "rpi.png",
+        icon: "nvidia-logo.png",
         info: function() {
             if ( Object.keys(pinsInUse).length !== 0 ) {
                 return "**Pins in use** : "+Object.keys(pinsInUse);
@@ -443,7 +444,7 @@
         },
         inputs:1,
         outputs:0,
-        icon: "rpi.png",
+        icon: "nvidia-logo.png",
         info: function() {
             if ( Object.keys(pinsInUse).length !== 0 ) {
                 return "**Pins in use** : "+Object.keys(pinsInUse);
@@ -477,7 +478,7 @@
                 $('#pin-tip').html(pintip + Object.keys(data));
             });
 
-            for (var i=0; i< validPinValues.length; i++) {
+            for (var i = 0; i < validPinValues.length; i++) {
                 $("#pinform input[value="+validPinValues[i]+"]").on("change", function (evt) {
                     $("#node-input-pin").val(evt.currentTarget.value);
                     $("#node-input-pin").removeClass("input-error");
@@ -569,7 +570,7 @@
         },
         inputs:0,
         outputs:1,
-        icon: "rpi.png",
+        icon: "nvidia-logo.png",
         label: function() {
             var na = this._("jetson-gpio.label.pimouse");
             if (this.butt === "1") { na += " "+this._("jetson-gpio.label.left"); }
@@ -599,7 +600,7 @@
         },
         inputs:0,
         outputs:1,
-        icon: "rpi.png",
+        icon: "nvidia-logo.png",
         label: function() {
             return this.name || this._("jetson-gpio.label.pikeyboard");
         },
