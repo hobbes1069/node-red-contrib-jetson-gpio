@@ -215,130 +215,13 @@ module.exports = function(RED) {
             delete pinsInUse[node.pin];
             if (node.child != null) {
                 node.finished = done;
-                node.child.kill('SIGKILL');
+                node.child.kill('SIGTERM');
             }
             else { done(); }
         });
 
     }
     RED.nodes.registerType("jetson-gpio out",GPIOOutNode);
-
-    function PiMouseNode(n) {
-        RED.nodes.createNode(this,n);
-        this.butt = n.butt || 7;
-        var node = this;
-
-        if (allOK === true) {
-            node.child = spawn(gpioCommand+".py", ["mouse",node.butt]);
-            node.status({fill:"green",shape:"dot",text:"jetson-gpio.status.ok"});
-
-            node.child.stdout.on('data', function (data) {
-                data = Number(data);
-                if (data !== 0) { node.send({ topic:"jetson/mouse", button:data, payload:1 }); }
-                else { node.send({ topic:"jetson/mouse", button:data, payload:0 }); }
-            });
-
-            node.child.stderr.on('data', function (data) {
-                if (RED.settings.verbose) { node.log("err: "+data+" :"); }
-            });
-
-            node.child.on('close', function (code) {
-                node.child = null;
-                node.running = false;
-                if (RED.settings.verbose) { node.log(RED._("jetson-gpio.status.closed")); }
-                if (node.finished) {
-                    node.status({fill:"grey",shape:"ring",text:"jetson-gpio.status.closed"});
-                    node.finished();
-                }
-                else { node.status({fill:"red",shape:"ring",text:"jetson-gpio.status.stopped"}); }
-            });
-
-            node.child.on('error', function (err) {
-                if (err.errno === "ENOENT") { node.error(RED._("jetson-gpio.errors.commandnotfound")); }
-                else if (err.errno === "EACCES") { node.error(RED._("jetson-gpio.errors.commandnotexecutable")); }
-                else { node.error(RED._("jetson-gpio.errors.error")+': ' + err.errno); }
-            });
-
-            node.on("close", function(done) {
-                node.status({fill:"grey",shape:"ring",text:"jetson-gpio.status.closed"});
-                if (node.child != null) {
-                    node.finished = done;
-                    node.child.kill('SIGINT');
-                    node.child = null;
-                }
-                else { done(); }
-            });
-        }
-        else {
-            node.status({fill:"grey",shape:"dot",text:"jetson-gpio.status.not-available"});
-        }
-    }
-    RED.nodes.registerType("jetson-mouse",PiMouseNode);
-
-    function PiKeyboardNode(n) {
-        RED.nodes.createNode(this,n);
-        var node = this;
-
-        var doConnect = function() {
-            node.child = spawn(gpioCommand+".py", ["kbd","0"]);
-            node.status({fill:"green",shape:"dot",text:"jetson-gpio.status.ok"});
-
-            node.child.stdout.on('data', function (data) {
-                var d = data.toString().trim().split("\n");
-                for (var i = 0; i < d.length; i++) {
-                    if (d[i] !== '') {
-                        var b = d[i].trim().split(",");
-                        var act = "up";
-                        if (b[1] === "1") { act = "down"; }
-                        if (b[1] === "2") { act = "repeat"; }
-                        node.send({ topic:"jetson/key", payload:Number(b[0]), action:act });
-                    }
-                }
-            });
-
-            node.child.stderr.on('data', function (data) {
-                if (RED.settings.verbose) { node.log("err: "+data+" :"); }
-            });
-
-            node.child.on('close', function (code) {
-                node.running = false;
-                node.child = null;
-                if (RED.settings.verbose) { node.log(RED._("jetson-gpio.status.closed")); }
-                if (node.finished) {
-                    node.status({fill:"grey",shape:"ring",text:"jetson-gpio.status.closed"});
-                    node.finished();
-                }
-                else {
-                    node.status({fill:"red",shape:"ring",text:"jetson-gpio.status.stopped"});
-                    setTimeout(function() { doConnect(); },2000)
-                }
-            });
-
-            node.child.on('error', function (err) {
-                if (err.errno === "ENOENT") { node.error(RED._("jetson-gpio.errors.commandnotfound")); }
-                else if (err.errno === "EACCES") { node.error(RED._("jetson-gpio.errors.commandnotexecutable")); }
-                else { node.error(RED._("jetson-gpio.errors.error")+': ' + err.errno); }
-            });
-        }
-
-        if (allOK === true) {
-            doConnect();
-
-            node.on("close", function(done) {
-                node.status({});
-                if (node.child != null) {
-                    node.finished = done;
-                    node.child.kill('SIGINT');
-                    node.child = null;
-                }
-                else { done(); }
-            });
-        }
-        else {
-            node.status({fill:"grey",shape:"dot",text:"jetson-gpio.status.not-available"});
-        }
-    }
-    RED.nodes.registerType("jetson-keyboard",PiKeyboardNode);
 
     var pitype = { type:"" };
     if (allOK === true) {

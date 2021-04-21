@@ -1,11 +1,7 @@
 node-red-contrib-jetson-gpio
 ============================
 
-A set of <a href="http://nodered.org" target="_new">Node-RED</a> nodes to interact with Jetson Nano GPIO using the Jetson.GPIO python library.
-
-It also include a simple node that detect mouse buttons and also keyboard clicks. Note: this
-picks up mouse keys direct from the keyboard so should work even when the app does not have
-focus, but YMMV.
+A set of <a href="http://nodered.org" target="_new">Node-RED</a> nodes to interact with Jetson Nano GPIO using libgpiod and its utilities.
 
 ## Install
 
@@ -14,9 +10,13 @@ command in your Node-RED user directory - typically `~/.node-red`
 
         npm i node-red-contrib-jetson-gpio
 
-The sysfs interface has been deprecated since kernel 4.8 and Fedora aarch64 is compiled without it. Use gpiod instead. See: https://fedoraproject.org/wiki/Architectures/ARM/gpio for more information.
+The sysfs interface for GPIO has been deprecated since kernel 4.8 and Fedora aarch64 is compiled without it. Use libgpiod instead. See: https://fedoraproject.org/wiki/Architectures/ARM/gpio for more information.
 
-	sudo dnf install libgpiod-utils python3-libgpiod
+	sudo dnf install libgpiod-utils
+
+Or on DEB systems:
+
+	sudo apt install gpiod
 
 
 ## Usage
@@ -37,6 +37,8 @@ You may also enable the input pullup resistor &uarr; or the pulldown resistor &d
 ### Output node
 
 Can be used in Digital or PWM modes.
+
+**Note:** PWM is software based and may cause excessive CPU usage on low power devices.
 
 ##### Input
 
