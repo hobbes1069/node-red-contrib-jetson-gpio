@@ -8,13 +8,7 @@
             "type": "Type",
             "initpin": "Initialise pin state?",
             "debounce": "Debounce",
-            "freq": "Frequency",
-            "button": "Button",
-            "pimouse": "Pi Mouse",
-            "pikeyboard": "Pi Keyboard",
-            "left": "Left",
-            "right": "Right",
-            "middle": "Middle"
+            "freq": "Frequency"
         },
         "resistor": {
             "as-is": "as-is",
@@ -27,10 +21,6 @@
         "servo": "Servo output",
         "initpin0": "initial level of pin - low (0)",
         "initpin1": "initial level of pin - high (1)",
-        "left": "left",
-        "right": "right",
-        "middle": "middle",
-        "any": "any",
         "pinname": "Pin",
         "alreadyuse": "already in use",
         "alreadyset": "already set as",
@@ -58,10 +48,9 @@
             "ok": "OK"
         },
         "errors": {
-            "ignorenode": "Raspberry Pi specific node set inactive",
-            "version": "Failed to get version from Pi",
-            "sawpitype": "Saw Pi Type",
-            "libnotfound": "Cannot find Pi RPi.GPIO python library",
+            "ignorenode": "Jetson specific node set inactive",
+            "version": "Failed to get version from Jetson",
+            "sawpitype": "Saw Jetson Type",
             "alreadyset": "GPIO pin __pin__ already set as type: __type__",
             "invalidpin": "Invalid GPIO pin",
             "invalidinput": "Invalid input",
