@@ -3,6 +3,8 @@ node-red-contrib-jetson-gpio
 
 A set of <a href="http://nodered.org" target="_new">Node-RED</a> nodes to interact with Jetson Nano GPIO using libgpiod and its utilities.
 
+Forked from the execellent node-red-node-rpi-gpio module by [Dave Conway-Jones](mailto:ceejay@vnet.ibm.com),
+
 ## Install
 
 Either use the Node-RED Menu - Manage Palette option to install, or run the following
