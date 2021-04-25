@@ -11,7 +11,7 @@ module.exports = function(RED) {
     var gpioMonCmd  = 'gpiomon';
     var gpioInfoCmd = 'gpioinfo';
     var gpiochip    = 'tegra-gpio';
-    var gpiomode    = '--mode=exit';
+    var gpiomode    = '--mode=signal';
     var allOK = true;
 
     try {
@@ -50,7 +50,6 @@ module.exports = function(RED) {
 
         if (allOK === true) {
             if (node.bcm !== undefined) {
-                //node.child = spawn(gpioGetCmd, ["in",node.pin,node.intype,node.debounce]);
                 node.child = spawn(gpioMonCmd, [gpiochip, node.bcm]);
                 node.running = true;
                 node.status({fill:"yellow",shape:"dot",text:"jetson-gpio.status.ok"});
@@ -141,7 +140,7 @@ module.exports = function(RED) {
 	function gpioset(level) {
 	    if (node.child) { node.child.kill('SIGTERM') }
             if (node.out === "out") {
-                node.child = spawn(gpioSetCmd, ["--mode=signal", gpiochip, node.bcm+"="+level]);
+                node.child = spawn(gpioSetCmd, [gpiomode, gpiochip, node.bcm+"="+level]);
                 node.status({fill:"green",shape:"dot",text:level});
             } else {
                 node.status({fill:"yellow",shape:"dot",text:"jetson-gpio.status.ok"});

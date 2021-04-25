@@ -4,7 +4,7 @@
 		"name": "Richard Shaw",
 		"email": "hobbes1069@fedoraproject.org"
 	},
-	"contributors": { "Dave Conway-Jones <ceejay@vnet.ibm.com>" },
+	"contributors": "Dave Conway-Jones <ceejay@vnet.ibm.com>",
 	"dependencies": {},
 	"description": "A basic Node-RED node for the Jetson Nano GPIO",
 	"keywords": [
